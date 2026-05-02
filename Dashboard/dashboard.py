@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import seaborn as sns
 import numpy as np
+import os
 
 st.set_page_config(
     page_title="Bike Sharing Dashboard",
@@ -91,8 +92,13 @@ footer { visibility: hidden; }
 
 @st.cache_data
 def load_data():
-    day_df  = pd.read_csv("dashboard/day.csv",  parse_dates=["dteday"])
-    hour_df = pd.read_csv("dashboard/hour.csv", parse_dates=["dteday"])
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    day_path = os.path.join(current_dir, "day.csv")
+    hour_path = os.path.join(current_dir, "hour.csv")
+
+    day_df  = pd.read_csv(day_path,  parse_dates=["dteday"])
+    hour_df = pd.read_csv(hour_path, parse_dates=["dteday"])
 
     season_map  = {1: "Spring", 2: "Summer", 3: "Fall", 4: "Winter"}
     weather_map = {
