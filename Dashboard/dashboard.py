@@ -5,9 +5,6 @@ import matplotlib.ticker as mticker
 import seaborn as sns
 import numpy as np
 
-# ──────────────────────────────────────────────
-# PAGE CONFIG
-# ──────────────────────────────────────────────
 st.set_page_config(
     page_title="Bike Sharing Dashboard",
     page_icon="🚲",
@@ -15,9 +12,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ──────────────────────────────────────────────
-# PALETTE & STYLE
-# ──────────────────────────────────────────────
 PRIMARY   = "#2563EB"
 SECONDARY = "#10B981"
 ACCENT    = "#F59E0B"
@@ -39,9 +33,6 @@ plt.rcParams.update({
     "axes.facecolor"    : "white",
 })
 
-# ──────────────────────────────────────────────
-# CUSTOM CSS
-# ──────────────────────────────────────────────
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] { background-color: #F1F5F9; }
@@ -98,13 +89,10 @@ footer { visibility: hidden; }
 """, unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────
-# DATA LOADING
-# ──────────────────────────────────────────────
 @st.cache_data
 def load_data():
-    day  = pd.read_csv("day.csv",  parse_dates=["dteday"])
-    hour = pd.read_csv("hour.csv", parse_dates=["dteday"])
+    day_df  = pd.read_csv("dashboard/day.csv",  parse_dates=["dteday"])
+    hour_df = pd.read_csv("dashboard/hour.csv", parse_dates=["dteday"])
 
     season_map  = {1: "Spring", 2: "Summer", 3: "Fall", 4: "Winter"}
     weather_map = {
@@ -117,7 +105,8 @@ def load_data():
     month_map   = {1:"Jan",2:"Feb",3:"Mar",4:"Apr",5:"May",6:"Jun",
                    7:"Jul",8:"Aug",9:"Sep",10:"Oct",11:"Nov",12:"Dec"}
 
-    for df in [day, hour]:
+
+    for df in [day_df, hour_df]:
         df["season_name"]  = df["season"].map(season_map)
         df["weather_name"] = df["weathersit"].map(weather_map)
         df["weekday_name"] = df["weekday"].map(weekday_map)
@@ -127,19 +116,17 @@ def load_data():
         df["hum_pct"]      = df["hum"] * 100
         df["wind_kmh"]     = df["windspeed"] * 67
 
-    # Temp cluster (atemp) – sama persis dengan notebook
+
     bins   = [0, 0.3, 0.6, 1]
     labels = ["Cold", "Moderate", "Hot"]
-    day["temp_category"] = pd.cut(day["atemp"], bins=bins, labels=labels)
+    day_df["temp_category"] = pd.cut(day_df["atemp"], bins=bins, labels=labels)
 
-    return day, hour
+
+    return day_df, hour_df
+
 
 day_df, hour_df = load_data()
 
-
-# ──────────────────────────────────────────────
-# SIDEBAR FILTERS
-# ──────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 🚲 Bike Sharing")
     st.markdown("Capital Bikeshare · Washington D.C.")
@@ -161,7 +148,6 @@ with st.sidebar:
     st.divider()
     st.caption("Dataset: UCI Bike Sharing Dataset\nPeriode: Jan 2011 – Des 2012")
 
-# Terapkan filter
 day_f  = day_df[
     day_df["year_label"].isin(selected_years) &
     day_df["season_name"].isin(selected_seasons) &
@@ -175,9 +161,6 @@ hour_f = hour_df[
 ].copy()
 
 
-# ──────────────────────────────────────────────
-# HELPERS
-# ──────────────────────────────────────────────
 def metric_card(label, value, delta=None, color=PRIMARY):
     delta_html = ""
     if delta is not None:
@@ -212,9 +195,6 @@ def insight_box(text):
     st.markdown(f'<div class="insight-box">💡 {text}</div>', unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────
-# HEADER
-# ──────────────────────────────────────────────
 st.markdown("""
 <div style="background:linear-gradient(135deg,#1E3A5F,#2563EB);
             border-radius:14px;padding:24px 30px;margin-bottom:24px;color:white;">
@@ -226,9 +206,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────
-# KPI ROW
-# ──────────────────────────────────────────────
 section("📊 Ringkasan Statistik")
 k1, k2, k3, k4 = st.columns(4)
 
@@ -238,7 +215,6 @@ peak_day       = day_f["cnt"].max()
 registered_pct = (day_f["registered"].sum() / day_f["cnt"].sum() * 100
                   if day_f["cnt"].sum() > 0 else 0)
 
-# YoY growth untuk delta
 yoy_delta = None
 if {"2011", "2012"}.issubset(set(selected_years)):
     t11 = day_df[day_df["year_label"] == "2011"]["cnt"].sum()
@@ -258,9 +234,6 @@ with k4:
 st.markdown("<br>", unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────
-# ROW 1 – Tren Bulanan & Per Musim
-# ──────────────────────────────────────────────
 section("📈 Tren Peminjaman Sepanjang Waktu")
 col1, col2 = st.columns([3, 2])
 
@@ -299,7 +272,6 @@ with col1:
     chart_card(fig)
 
 with col2:
-    # ── Sama persis dengan notebook: biru untuk max, mint untuk lainnya ──
     season_order = ["Spring", "Summer", "Fall", "Winter"]
     season_data = (
         day_f.groupby("season_name")["cnt"]
@@ -330,10 +302,6 @@ with col2:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-
-# ══════════════════════════════════════════════
-# PERTANYAAN BISNIS 1
-# ══════════════════════════════════════════════
 question_badge("Pertanyaan Bisnis 1")
 st.markdown(
     "**Bagaimana perbedaan tren rata-rata jumlah peminjaman sepeda per jam antara "
@@ -345,7 +313,6 @@ section("⏱️ Pola Peminjaman per Jam: Hari Kerja vs Akhir Pekan")
 col3, col4 = st.columns([3, 2])
 
 with col3:
-    # ── Sama persis dengan notebook: semua 24 jam, marker di setiap jam ──
     hourly = (
         hour_f.groupby(["hr", "workingday"])["cnt"]
         .mean()
@@ -377,7 +344,6 @@ with col3:
     chart_card(fig)
 
 with col4:
-    # Heatmap jam × hari (dari EDA notebook) – mendukung Pertanyaan 1
     pivot = (
         hour_f.groupby(["weekday", "hr"])["cnt"]
         .mean()
@@ -387,7 +353,6 @@ with col4:
     pivot = pivot[["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]]
     pivot.index = [f"{h:02d}:00" for h in pivot.index]
 
-    # Tampilkan setiap 2 jam agar tidak terlalu padat di kolom kecil
     tick_idx = [i for i, lbl in enumerate(pivot.index) if int(lbl[:2]) % 2 == 0]
 
     fig, ax = plt.subplots(figsize=(4.5, 4))
@@ -407,7 +372,6 @@ with col4:
     fig.tight_layout()
     chart_card(fig)
 
-# Kesimpulan Pertanyaan 1
 insight_box(
     "Jam puncak hari kerja jatuh pada pukul <b>08:00</b> (berangkat kerja) dan "
     "<b>17:00</b> (pulang kerja), mencerminkan pola <i>commuting</i>. "
@@ -417,10 +381,6 @@ insight_box(
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-
-# ══════════════════════════════════════════════
-# PERTANYAAN BISNIS 2
-# ══════════════════════════════════════════════
 question_badge("Pertanyaan Bisnis 2")
 st.markdown(
     "**Bagaimana perbandingan rata-rata jumlah peminjaman sepeda harian di antara "
@@ -432,7 +392,6 @@ section("🌤️ Dampak Kondisi Cuaca terhadap Peminjaman")
 col5, col6 = st.columns([3, 2])
 
 with col5:
-    # ── Sama persis dengan notebook: sns.barplot, biru untuk max, mint lainnya ──
     weather_order = [
         "Cerah/Berawan", "Kabut/Mendung",
         "Hujan/Salju Ringan", "Cuaca Ekstrem"
@@ -466,7 +425,6 @@ with col5:
     chart_card(fig)
 
 with col6:
-    # Scatter suhu vs peminjaman (dari EDA notebook)
     sample = day_f.sample(min(500, len(day_f)), random_state=42)
     fig, ax = plt.subplots(figsize=(4.5, 4))
     sc = ax.scatter(
@@ -490,7 +448,6 @@ with col6:
     fig.tight_layout()
     chart_card(fig)
 
-# Kesimpulan Pertanyaan 2
 insight_box(
     "Cuaca <b>Cerah/Berawan</b> secara konsisten mencatat volume peminjaman tertinggi. "
     "Kondisi buruk seperti hujan/salju ringan menurunkan rata-rata peminjaman secara signifikan, "
@@ -499,10 +456,6 @@ insight_box(
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-
-# ══════════════════════════════════════════════
-# PERTANYAAN BISNIS 3
-# ══════════════════════════════════════════════
 question_badge("Pertanyaan Bisnis 3")
 st.markdown(
     "**Bagaimana perbedaan rata-rata jumlah peminjaman sepeda pada setiap kelompok "
@@ -514,13 +467,11 @@ section("🌡️ Klaster Suhu: Cold · Moderate · Hot")
 col7, col8 = st.columns([3, 2])
 
 with col7:
-    # ── Sama persis dengan notebook: binning atemp, barplot warna notebook ──
     temp_cluster = (
         day_f.groupby("temp_category", observed=True)["cnt"]
         .mean()
         .reset_index()
     )
-    # Pastikan urutan
     cat_order = ["Cold", "Moderate", "Hot"]
     temp_cluster["temp_category"] = pd.Categorical(
         temp_cluster["temp_category"], categories=cat_order, ordered=True
@@ -552,7 +503,6 @@ with col7:
     chart_card(fig)
 
 with col8:
-    # Ringkasan klaster dalam bentuk tabel metrik + bar kecil
     cat_colors_map = {"Cold": "#60A5FA", "Moderate": "#2563EB", "Hot": "#F59E0B"}
     st.markdown('<div class="chart-card">', unsafe_allow_html=True)
     st.markdown("**Ringkasan Rata-rata per Klaster Suhu**")
@@ -580,7 +530,6 @@ with col8:
         """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Kesimpulan Pertanyaan 3
 insight_box(
     "Kategori suhu <b>Moderate</b> mencatat rata-rata peminjaman tertinggi karena "
     "memberikan kenyamanan termal optimal bagi pengguna. Suhu <b>Cold</b> menyebabkan "
@@ -591,9 +540,6 @@ insight_box(
 st.markdown("<br>", unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────
-# ROW EXTRA – Heatmap Penuh & Segmentasi Pengguna
-# ──────────────────────────────────────────────
 section("🗓️ Peta Panas Lengkap: Jam × Hari dalam Seminggu")
 
 pivot_full = (
@@ -678,10 +624,6 @@ with col10:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-
-# ──────────────────────────────────────────────
-# INSIGHT CARDS
-# ──────────────────────────────────────────────
 section("💡 Temuan Utama")
 
 peak_hour_wd = (
@@ -721,7 +663,6 @@ for col_ins, (title, val, desc, clr) in zip([ins1, ins2, ins3, ins4], insights):
         </div>
         """, unsafe_allow_html=True)
 
-# YoY growth banner
 if {"2011", "2012"}.issubset(set(selected_years)):
     t11 = day_df[day_df["year_label"] == "2011"]["cnt"].sum()
     t12 = day_df[day_df["year_label"] == "2012"]["cnt"].sum()
